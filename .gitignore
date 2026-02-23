@@ -1,0 +1,18 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environments (VERY IMPORTANT)
+.venv/
+venv/
+env/
+
+# ML / Large model files
+*.pt
+*.pth
+*.onnx
+*.bin
+
+# OS files
+.DS_Store
+Thumbs.db

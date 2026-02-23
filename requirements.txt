@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+chromadb
+sentence-transformers
+transformers
+torch
+langchain
+ragas
+pydantic
+python-dotenv
