@@ -1,6 +1,19 @@
 # Python cache
 __pycache__/
 *.pyc
+.env
+.env.*
+!.env.example
+.pytest_cache/
+pytest-cache-files-*/
+.coverage
+htmlcov/
+.ruff_cache/
+.mypy_cache/
+data/local/
+data/test-tmp/
+*.sqlite3
+*.db
 
 # Virtual environments (VERY IMPORTANT)
 .venv/
