@@ -1,0 +1,7 @@
+# Evaluation
+
+`evaluation/questions.jsonl` is a deliberately small synthetic set with categories, expected chunk IDs, and expected abstention labels. The sample corpus is likewise synthetic. Run `MOCK_MODE=true python -m evaluation.run_evaluation`; output is written to `evaluation/reports/mock-evaluation.json`.
+
+The runner compares dense token-vector fallback, BM25, hybrid RRF, and hybrid plus deterministic overlap reranking. Recall@k and precision@k compare returned chunk IDs with expected IDs; MRR uses the first relevant rank; nDCG discounts lower ranks. Questions without expected chunk IDs are excluded from ranking metrics rather than counted as retrieval successes; if a metric has no applicable examples, it is reported as unavailable. Citation-support and groundedness are simple retrieved-ID integrity proxies, not LLM judgments or clinical accuracy measures. Abstention accuracy compares the heuristic output with synthetic labels. Latency percentiles are local process timings, not load or service benchmarks. Error rate records runner errors; zero here does not imply reliability in deployment.
+
+Reproduction uses Python dependencies in `requirements.txt` and `MOCK_MODE=true`; it needs no network or credentials. The limited vocabulary, tiny corpus, heuristic safety layer, token-vector fallback, and small question set constrain all interpretation. Failure examples and actual outputs are generated into the report; do not generalize the resulting values.
