@@ -18,7 +18,7 @@ def _connect(path=INDEX_PATH):
     return db
 
 
-def rebuild_index(jsonl_paths, path=INDEX_PATH):
+def rebuild_index(jsonl_paths, path=INDEX_PATH, chunk_ids=None):
     db = _connect(path)
     try:
         db.execute(
@@ -41,6 +41,8 @@ def rebuild_index(jsonl_paths, path=INDEX_PATH):
                         row = json.loads(line)
                         chunk_id = row.get("chunk_id", "")
                         if not chunk_id or chunk_id in seen_ids:
+                            continue
+                        if chunk_ids is not None and chunk_id not in chunk_ids:
                             continue
                         seen_ids.add(chunk_id)
                         db.execute(

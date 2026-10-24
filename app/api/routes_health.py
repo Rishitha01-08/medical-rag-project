@@ -54,6 +54,8 @@ def ready():
         "keyword_index": "sqlite_fts5",
         "collection": settings.vector_collection,
         "indexed_chunks": manifest.get("expected_chunk_count") if manifest else None,
+        "total_chunks": manifest.get("total_chunk_count") if manifest else None,
+        "corpus_coverage": "complete" if manifest and manifest.get("corpus_complete", True) else "partial",
         "chunker_version": manifest.get("chunker_version") if manifest else None,
         "provider": "mock" if settings.mock_mode else settings.llm_provider,
     }

@@ -148,9 +148,12 @@
         const readyResponse = await fetch('/ready');
         const ready = await readyResponse.json();
         if (readyResponse.ok) {
-          statusText.textContent = 'Search indexes ready';
-          statusDot.style.background = '#38b57c';
-          document.getElementById('knowledgeBaseValue').textContent = `${Number(ready.indexed_chunks).toLocaleString()} textbook chunks`;
+          const partial = ready.corpus_coverage === 'partial';
+          statusText.textContent = partial ? 'Partial textbook index ready' : 'Search indexes ready';
+          statusDot.style.background = partial ? '#d79a32' : '#38b57c';
+          const indexed = Number(ready.indexed_chunks).toLocaleString();
+          const total = Number(ready.total_chunks || ready.indexed_chunks).toLocaleString();
+          document.getElementById('knowledgeBaseValue').textContent = partial ? `${indexed} of ${total} chunks · partial` : `${indexed} textbook chunks`;
         } else {
           const detail = ready.detail || {};
           statusText.textContent = 'Textbook index incomplete';

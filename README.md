@@ -62,6 +62,16 @@ Create the chunk file and audit, then build both indexes:
 
 The full build embeds over 110,000 chunks and may take a long time on a laptop. Keep the terminal open and watch its progress messages. If a run is interrupted, rerun without `--recreate`; it skips vector IDs already stored and rebuilds the keyword index. For full-scale indexing use a persistent Qdrant server/cloud cluster and adequate disk/RAM. `--recreate` deletes the selected Qdrant collection before rebuilding it, so use it only after changing the corpus/chunker or when you intentionally want a clean rebuild. The indexer compares exact chunk-ID sets, not only counts, and writes an ignored manifest only after vector and keyword indexes match. Check `http://127.0.0.1:8000/ready`; it must report `ready` and 110,891+ indexed chunks (the actual expected total includes the checked-in sample and any local ingested documents).
 
+### Quick partial-corpus demo
+
+If the full embedding pass is too heavy for your laptop, press **Ctrl+C** in the indexing terminal, then build a keyword index for the vectors already stored and mark that corpus coverage partial:
+
+```powershell
+.\.venv\Scripts\python.exe -m scripts.index_vector_store --finalize-partial
+```
+
+This does not create additional vectors. `/ready` reports the indexed and total chunk counts, and the website labels the index **Partial textbook index ready**. You can demo the UI and ask about material in the indexed subset, but it may miss other topics and must not be described as searching all nine textbooks. Resume full indexing later with the normal command above; the app should be stopped while the local Qdrant index is being modified.
+
 Run the site:
 
 ```powershell
