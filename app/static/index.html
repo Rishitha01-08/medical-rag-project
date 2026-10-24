@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f8fc">
+  <title>MedGuide — Educational RAG</title>
+  <style>
+    :root{color-scheme:light;--ink:#17243b;--muted:#718099;--line:#e5eaf2;--blue:#3679e8;--blue-dark:#245fc4;--mint:#eaf7f2;--canvas:#f6f8fc;--white:#fff;--shadow:0 18px 50px rgba(31,53,89,.08)}
+    *{box-sizing:border-box}body{margin:0;background:var(--canvas);color:var(--ink);font:15px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}button,textarea,select{font:inherit}button{cursor:pointer}a{color:var(--blue)}
+    .shell{min-height:100vh;display:grid;grid-template-columns:248px minmax(0,1fr)}
+    .sidebar{background:#132139;color:#e7eef9;padding:25px 16px 18px;display:flex;flex-direction:column;gap:28px;min-height:100vh}
+    .brand{display:flex;align-items:center;gap:11px;padding:0 10px}.brand-mark{height:38px;width:38px;border-radius:13px;background:linear-gradient(145deg,#8bd8c0,#42a987);display:grid;place-items:center;color:#12302b;font-size:22px;font-weight:800}.brand-name{font-size:16px;font-weight:750;letter-spacing:.01em}.brand-sub{font-size:11px;color:#9aabc3;margin-top:1px}
+    .side-label{font-size:10px;text-transform:uppercase;letter-spacing:.13em;color:#8495ae;font-weight:750;padding:0 11px;margin-bottom:-19px}.nav-btn{width:100%;border:0;text-align:left;border-radius:11px;padding:11px 12px;display:flex;align-items:center;gap:11px;color:#d5deec;background:transparent;font-size:13px}.nav-btn.active{background:#223653;color:#fff}.nav-btn:hover{background:#1c304c}.nav-icon{width:18px;text-align:center;font-size:17px;color:#9fb2cd}.side-info{margin:0 6px;padding:14px;border:1px solid #2c405d;border-radius:13px;background:#182b46;color:#c8d4e4;font-size:12px}.side-info strong{display:block;color:#f2f6fb;font-size:12px;margin-bottom:5px}.side-bottom{margin-top:auto;padding:13px 10px 0;border-top:1px solid #2b3d58;color:#8fa0b8;font-size:11px}.local-dot{display:inline-block;width:7px;height:7px;background:#63d2a8;border-radius:50%;margin-right:7px}
+    main{min-width:0}.topbar{height:70px;padding:0 clamp(20px,4vw,54px);display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);background:rgba(255,255,255,.76)}.crumb{color:#8290a6;font-size:13px}.crumb b{color:#25344b;font-weight:650}.top-actions{display:flex;align-items:center;gap:12px}.status{display:inline-flex;align-items:center;gap:8px;color:#527064;border:1px solid #d9eee5;border-radius:999px;padding:6px 11px;background:#f4fbf8;font-size:11px;font-weight:650}.status-dot{width:7px;height:7px;border-radius:50%;background:#38b57c}.avatar{height:33px;width:33px;border-radius:50%;display:grid;place-items:center;background:#e8eef8;color:#4e6f9e;font-weight:700;font-size:12px}
+    .workspace{max-width:1400px;margin:0 auto;padding:30px clamp(20px,4vw,54px) 46px;display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:26px;align-items:start}.main-col{min-width:0}.eyebrow{display:flex;gap:8px;align-items:center;text-transform:uppercase;letter-spacing:.12em;color:#63809d;font-size:10px;font-weight:750}.eyebrow-mark{width:7px;height:7px;border-radius:50%;background:#4ba98c}.intro h1{font-size:clamp(27px,3vw,37px);line-height:1.16;letter-spacing:-.035em;margin:12px 0 9px}.intro p{margin:0;color:#718099;font-size:14px;max-width:660px}.topic-row{display:flex;gap:9px;flex-wrap:wrap;margin:19px 0 22px}.topic{border:1px solid #e1e8f1;background:#fff;color:#52647d;border-radius:999px;padding:7px 12px;font-size:11px}.topic:hover{border-color:#a9c5f6;color:#2564cb;background:#f7faff}
+    .chat-card{background:#fff;border:1px solid #e4eaf2;border-radius:18px;box-shadow:var(--shadow);overflow:hidden}.chat-head{padding:16px 20px;border-bottom:1px solid #edf0f5;display:flex;justify-content:space-between;align-items:center}.chat-title{font-size:13px;font-weight:700}.chat-subtitle{font-size:11px;color:#8592a5;margin-top:2px}.select-wrap{display:flex;align-items:center;gap:7px;color:#718099;font-size:11px}.select-wrap select{border:1px solid #e4eaf2;color:#3c506d;background:#fff;border-radius:8px;padding:7px 27px 7px 9px;font-size:11px;outline:none}
+    .conversation{min-height:310px;max-height:54vh;overflow:auto;padding:24px clamp(16px,3vw,28px);scroll-behavior:smooth}.welcome{max-width:620px;margin:22px auto 14px;text-align:center}.welcome-icon{width:52px;height:52px;background:#edf5ff;color:#3679e8;border-radius:17px;display:grid;place-items:center;margin:0 auto 14px;font-size:24px}.welcome h2{font-size:20px;margin:0 0 6px;letter-spacing:-.02em}.welcome p{font-size:12px;color:#7d8aa0;margin:0 auto;max-width:440px}.welcome-note{font-size:10px;color:#a0aaba;margin-top:16px}
+    .message{display:flex;gap:10px;margin:0 0 20px;align-items:flex-start}.message.user{flex-direction:row-reverse}.msg-avatar{flex:0 0 30px;height:30px;border-radius:10px;background:#edf4ff;color:#4a78bc;display:grid;place-items:center;font-size:13px}.message.user .msg-avatar{background:#e8f5ef;color:#41896e}.msg-content{max-width:min(84%,650px)}.msg-name{font-size:10px;color:#8a97a9;font-weight:650;margin:0 0 5px}.message.user .msg-name{text-align:right}.bubble{border:1px solid #e8edf4;background:#f8fafd;border-radius:4px 14px 14px 14px;padding:12px 14px;font-size:13px;color:#34435a;white-space:pre-wrap;overflow-wrap:anywhere}.message.user .bubble{background:#3679e8;border-color:#3679e8;color:#fff;border-radius:14px 4px 14px 14px}.answer-meta{font-size:10px;color:#8794a7;margin-top:8px;display:flex;gap:10px;flex-wrap:wrap}.citation-list{display:grid;gap:8px;margin-top:10px}.citation{border:1px solid #e5ebf3;border-radius:11px;background:#fff;padding:10px 12px}.citation-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.citation-title{font-size:11px;font-weight:700;color:#33445d}.citation-id{font-size:9px;color:#5f7fab;background:#eff5ff;border-radius:5px;padding:3px 6px;white-space:nowrap}.citation-source{font-size:10px;color:#8996a9;margin-top:3px}.citation-excerpt{font-size:11px;color:#5d6b80;margin:7px 0 0}.citation a{font-size:10px;text-decoration:none;font-weight:650}
+    .typing{display:flex;gap:4px;padding:14px}.typing i{width:6px;height:6px;background:#89a2c5;border-radius:50%;animation:pulse 1s infinite alternate}.typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}@keyframes pulse{to{opacity:.3;transform:translateY(-3px)}}
+    .composer-wrap{padding:0 18px 15px}.composer{border:1px solid #dfe6ef;border-radius:14px;background:#fff;box-shadow:0 5px 18px rgba(31,53,89,.04);padding:9px 10px 9px 14px;display:flex;align-items:flex-end;gap:10px}.composer:focus-within{border-color:#9dbcf2;box-shadow:0 0 0 3px rgba(54,121,232,.09)}textarea{resize:none;min-height:43px;max-height:130px;flex:1;border:0;outline:0;padding:10px 0;color:#24344c;background:transparent;font-size:13px;line-height:1.5}textarea::placeholder{color:#a0aaba}.send{height:38px;width:40px;border:0;border-radius:10px;background:var(--blue);color:#fff;font-size:18px;display:grid;place-items:center}.send:hover{background:var(--blue-dark)}.send:disabled{opacity:.45;cursor:wait}.composer-hint{text-align:center;color:#9aa5b4;font-size:9px;margin-top:8px}.error{color:#b64242;font-size:11px;margin:8px 4px 0;display:none}
+    .aside{padding-top:4px}.panel{background:#fff;border:1px solid #e5eaf1;border-radius:15px;padding:16px;margin-bottom:13px}.panel h3{font-size:12px;margin:0 0 11px;display:flex;align-items:center;gap:8px}.panel p{font-size:11px;color:#77859a;margin:0}.panel-icon{width:26px;height:26px;border-radius:8px;background:#edf5ff;display:grid;place-items:center;color:#4280d8;font-size:13px}.safety-panel{background:#f4faf7;border-color:#dcefe5}.safety-panel h3{color:#315d4b}.safety-panel p{color:#647f72}.feature{display:flex;gap:9px;margin-top:11px;align-items:flex-start}.feature-icon{color:#55a184;font-size:13px;line-height:1.5}.feature span:last-child{font-size:10px;color:#6d7c91}.mini-label{font-size:9px;color:#9aa5b4;text-transform:uppercase;letter-spacing:.1em;font-weight:750;margin:14px 0 6px}.metric{display:flex;justify-content:space-between;font-size:10px;color:#718099;padding:6px 0;border-bottom:1px solid #f0f2f6}.metric:last-child{border-bottom:0}.metric b{color:#3c4e68;font-weight:650}.footnote{font-size:9px;color:#9aa5b4;padding:3px 4px;line-height:1.6}
+    .account-button{border:1px solid #dce5f1;border-radius:9px;padding:8px 12px;background:#fff;color:#35516f;font-size:11px;font-weight:650}.account-dialog{border:1px solid var(--line);border-radius:18px;padding:25px;width:min(430px,calc(100vw - 28px));box-shadow:0 24px 70px rgba(18,33,57,.2);color:var(--ink)}.account-dialog::backdrop{background:rgba(14,27,46,.42);backdrop-filter:blur(3px)}.account-dialog form{display:grid;gap:13px}.account-dialog h2{margin:0;font-size:23px}.account-dialog label:not(.history-consent){display:grid;gap:6px;font-size:11px;color:#52647d}.account-dialog input[type=email],.account-dialog input[type=password]{padding:11px;border:1px solid #dfe6ef;border-radius:9px;font:inherit;color:var(--ink)}.account-dialog small,.auth-privacy{font-size:10px;color:#8190a5;line-height:1.5}.auth-privacy{margin:0}.dialog-close{position:absolute;right:16px;top:12px;background:none;border:0;font-size:23px;color:#718099}.auth-submit{width:100%;font-size:13px}.auth-switch{border:0;background:none;color:#3679e8;font-size:11px;padding:5px}.danger-link{color:#a84242}.history-consent{display:flex;align-items:flex-start;gap:8px;margin-top:12px;font-size:10px;color:#617189;line-height:1.45}.history-consent input{margin:1px 0 0}.history-item{padding:9px 0;border-bottom:1px solid #eff2f6;font-size:10px;color:#596980}.history-item time{display:block;color:#9aa5b4;font-size:9px;margin-top:3px}.history-list{max-height:220px;overflow:auto}
+    .history-open{margin-top:6px;border:1px solid #dce5f1;background:#fff;border-radius:7px;padding:4px 8px;color:#3679e8;font-size:10px}
+    @media(max-width:1000px){.workspace{grid-template-columns:minmax(0,1fr);max-width:850px}.aside{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.panel{margin:0}.footnote{grid-column:1/-1}.conversation{max-height:60vh}}
+    @media(max-width:700px){.shell{grid-template-columns:1fr}.sidebar{display:none}.topbar{height:58px;padding:0 17px}.workspace{padding:23px 14px 28px;gap:18px}.intro h1{font-size:29px}.intro p{font-size:13px}.topic-row{margin:15px 0}.chat-head{padding:13px 14px}.select-wrap{gap:4px}.conversation{min-height:290px;max-height:58vh;padding:18px 13px}.composer-wrap{padding:0 10px 12px}.aside{grid-template-columns:1fr}.footnote{grid-column:auto}.status{font-size:10px;padding:5px 8px}.crumb{font-size:11px}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar" aria-label="Main navigation">
+      <div class="brand"><div class="brand-mark" aria-hidden="true">✚</div><div><div class="brand-name">MedGuide</div><div class="brand-sub">Evidence, made clearer</div></div></div>
+      <div class="side-label">Workspace</div>
+      <button class="nav-btn active" id="newChat"><span class="nav-icon">＋</span>New conversation</button>
+      <button class="nav-btn" id="historyButton"><span class="nav-icon">◷</span>History & activity</button>
+      <button class="nav-btn" id="aboutButton"><span class="nav-icon">ⓘ</span>About this demo</button>
+      <div class="side-info"><strong>Educational use only</strong>Answers depend on indexed textbook extracts. Unsupported or unindexed questions should receive an honest no-evidence response.</div>
+      <div class="side-bottom"><span class="local-dot"></span>Educational demo · sign-in optional</div>
+    </aside>
+    <main>
+      <header class="topbar"><div class="crumb">Workspace <span aria-hidden="true">/</span> <b>Ask MedGuide</b></div><div class="top-actions"><div class="status" id="serviceStatus"><span class="status-dot"></span><span>Checking service</span></div><button class="account-button" id="accountButton" type="button">Sign in</button></div></header>
+      <div class="workspace">
+        <section class="main-col" aria-label="Question and answer">
+          <div class="intro"><div class="eyebrow"><span class="eyebrow-mark"></span>Educational information assistant</div><h1>Good questions deserve<br>grounded answers.</h1><p>Ask a general health education question. MedGuide searches the available textbook extracts, then shows the evidence and where it came from.</p></div>
+          <div class="topic-row" aria-label="Example questions"><button class="topic" data-question="What does hydration mean?">💧 &nbsp;What is hydration?</button><button class="topic" data-question="What are some basics of sleep routines?">☾ &nbsp;Sleep routines</button><button class="topic" data-question="How can handwashing help reduce the spread of germs?">✳ &nbsp;Handwashing</button></div>
+          <section class="chat-card" aria-label="Chat">
+            <div class="chat-head"><div><div class="chat-title">Your conversation</div><div class="chat-subtitle">Answers include supporting source excerpts</div></div><label class="select-wrap" for="retrievalMode">Search<select id="retrievalMode" aria-label="Retrieval mode"><option value="hybrid">Balanced</option><option value="hybrid_rerank">Reranked</option><option value="bm25">Keyword</option><option value="dense">Dense</option></select></label></div>
+            <div class="conversation" id="conversation" aria-live="polite" aria-relevant="additions text"><div class="welcome" id="welcome"><div class="welcome-icon">✧</div><h2>What would you like to learn?</h2><p>Ask a general educational question. MedGuide searches only the sources that have been fully indexed.</p><div class="welcome-note">Tip: name the topic and use the source excerpts to check each answer.</div></div></div>
+            <div class="composer-wrap"><form class="composer" id="askForm"><textarea id="question" rows="1" maxlength="2000" aria-label="Your question" placeholder="Ask a general health education question…"></textarea><button class="send" id="sendButton" type="submit" aria-label="Send question">↑</button></form><div class="error" id="errorMessage" role="alert"></div><div class="composer-hint">Enter to send · Shift + Enter for a new line</div></div>
+          </section>
+        </section>
+        <aside class="aside" aria-label="About MedGuide">
+          <section class="panel" id="historyPanel" hidden><h3><span class="panel-icon">◷</span>Your activity</h3><p id="historyStatus">Sign in and enable encrypted history to save conversations.</p><label class="history-consent"><input id="historyConsent" type="checkbox"> Save my future conversations in my account</label><div class="metric"><span>Saved conversations</span><b id="historyCount">0</b></div><div class="history-list" id="historyList"></div></section>
+          <section class="panel safety-panel"><h3><span class="panel-icon">♡</span>A careful boundary</h3><p>MedGuide is an educational software demo, not a medical service. It cannot assess symptoms or recommend treatment.</p><div class="feature"><span class="feature-icon">✓</span><span>Shows source excerpts alongside answers</span></div><div class="feature"><span class="feature-icon">✓</span><span>Can say when its sources are insufficient</span></div><div class="feature"><span class="feature-icon">✓</span><span>Uses sample educational content only</span></div></section>
+          <section class="panel"><h3><span class="panel-icon">⌕</span>About this answer</h3><p>Each response includes source citations and a safety status so you can inspect its evidence.</p><div class="mini-label">What powers this demo</div><div class="metric"><span>Retriever</span><b>Hybrid search</b></div><div class="metric"><span>Knowledge base</span><b id="knowledgeBaseValue">Checking…</b></div><div class="metric"><span>Provider</span><b id="providerValue">Checking…</b></div></section>
+          <div class="footnote">Please don’t enter identifying health details. If an external model provider is configured, questions may be sent to that provider. For urgent concerns, contact local emergency services or a qualified professional.</div>
+        </aside>
+      </div>
+    </main>
+  </div>
+  <dialog id="accountDialog" class="account-dialog"><form id="authForm"><button class="dialog-close" id="closeAccount" type="button" aria-label="Close">×</button><div class="eyebrow"><span class="eyebrow-mark"></span>MedGuide account</div><h2 id="authTitle">Sign in</h2><label>Email address<input id="authEmail" type="email" autocomplete="email" maxlength="254" required></label><label>Password<input id="authPassword" type="password" autocomplete="current-password" minlength="12" maxlength="256" required><small>Use at least 12 characters.</small></label><label class="history-consent signup-consent"><input id="signupHistory" type="checkbox"> I want to save future conversations (optional)</label><p class="auth-privacy">Saved conversations are encrypted on this server when encryption is configured. Medical data is sensitive; do not enter identifying details. This demo does not provide clinical care.</p><div class="error" id="authError" role="alert"></div><button class="send auth-submit" id="authSubmit" type="submit">Sign in</button><button class="auth-switch" id="authSwitch" type="button">Create an account</button><button class="auth-switch" id="signOutButton" type="button" hidden>Sign out</button><button class="auth-switch danger-link" id="deleteAccountButton" type="button" hidden>Delete my account and data</button></form></dialog>
+  <script>
+    const form = document.getElementById('askForm');
+    const input = document.getElementById('question');
+    const conversation = document.getElementById('conversation');
+    const sendButton = document.getElementById('sendButton');
+    const errorBox = document.getElementById('errorMessage');
+    const welcome = document.getElementById('welcome');
+    const mode = document.getElementById('retrievalMode');
+    let busy = false;
+    let signedInUser = null;
+    let authMode = 'login';
+
+    function addMessage(role, text) {
+      const row = document.createElement('div'); row.className = `message ${role}`;
+      const avatar = document.createElement('div'); avatar.className = 'msg-avatar'; avatar.textContent = role === 'user' ? 'You' : '✦';
+      const content = document.createElement('div'); content.className = 'msg-content';
+      const name = document.createElement('div'); name.className = 'msg-name'; name.textContent = role === 'user' ? 'You' : 'MedGuide';
+      const bubble = document.createElement('div'); bubble.className = 'bubble'; bubble.textContent = text;
+      content.append(name, bubble); row.append(avatar, content); conversation.append(row); conversation.scrollTop = conversation.scrollHeight;
+      return { row, content };
+    }
+
+    function showAnswer(result, host) {
+      const meta = document.createElement('div'); meta.className = 'answer-meta';
+      const safety = result.safety || {};
+      const status = safety.abstained ? 'Insufficient source support' : (safety.category || 'Educational answer');
+      const label = document.createElement('span'); label.textContent = `● ${status}`; meta.append(label);
+      if (result.observability?.total_latency_ms != null) { const time = document.createElement('span'); time.textContent = `${Math.round(result.observability.total_latency_ms)} ms`; meta.append(time); }
+      host.append(meta);
+      if (result.citations?.length) {
+        const list = document.createElement('div'); list.className = 'citation-list';
+        const title = document.createElement('div'); title.className = 'msg-name'; title.textContent = 'Sources used'; list.append(title);
+        for (const citation of result.citations) {
+          const card = document.createElement('article'); card.className = 'citation';
+          const top = document.createElement('div'); top.className = 'citation-top';
+          const citationTitle = document.createElement('div'); citationTitle.className = 'citation-title'; citationTitle.textContent = citation.title || 'Source';
+          const id = document.createElement('span'); id.className = 'citation-id'; id.textContent = citation.source_id || 'source'; top.append(citationTitle,id); card.append(top);
+          if (citation.source || citation.section) { const source = document.createElement('div'); source.className = 'citation-source'; source.textContent = [citation.source,citation.section].filter(Boolean).join(' · '); card.append(source); }
+          const excerpt = document.createElement('p'); excerpt.className = 'citation-excerpt'; excerpt.textContent = `“${citation.excerpt || ''}”`; card.append(excerpt);
+          if (citation.source_url && /^https?:\/\//i.test(citation.source_url)) { const link = document.createElement('a'); link.href = citation.source_url; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = 'Open source ↗'; card.append(link); }
+          list.append(card);
+        }
+        host.append(list);
+      }
+      if (result.disclaimer) { const disclaimer = document.createElement('div'); disclaimer.className = 'answer-meta'; disclaimer.textContent = result.disclaimer; host.append(disclaimer); }
+      conversation.scrollTop = conversation.scrollHeight;
+    }
+
+    function addTyping() {
+      const row = document.createElement('div'); row.className = 'message assistant'; row.id = 'typing';
+      const avatar = document.createElement('div'); avatar.className = 'msg-avatar'; avatar.textContent = '✦';
+      const bubble = document.createElement('div'); bubble.className = 'bubble typing'; bubble.setAttribute('aria-label','Searching sources');
+      bubble.append(document.createElement('i'),document.createElement('i'),document.createElement('i')); row.append(avatar,bubble); conversation.append(row); conversation.scrollTop = conversation.scrollHeight;
+    }
+
+    async function ask(question) {
+      const clean = question.trim(); if (!clean || busy) return;
+      if (welcome?.isConnected) welcome.remove();
+      errorBox.style.display = 'none'; errorBox.textContent = '';
+      addMessage('user', clean); busy = true; sendButton.disabled = true; addTyping(); input.value = ''; input.style.height = 'auto';
+      try {
+        const response = await fetch('/api/v1/ask', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({question:clean,retrieval_mode:mode.value}) });
+        const result = await response.json(); document.getElementById('typing')?.remove();
+        if (!response.ok) { const detail = result.detail; throw new Error(typeof detail === 'string' ? detail : (detail?.message || 'The request could not be completed.')); }
+        const message = addMessage('assistant', result.answer || 'No answer was returned.'); showAnswer(result, message.content);
+        if (signedInUser?.history_enabled) refreshHistory();
+      } catch (error) {
+        document.getElementById('typing')?.remove(); errorBox.textContent = error.message || 'Could not reach the service. Check that the server is running.'; errorBox.style.display = 'block';
+      } finally { busy = false; sendButton.disabled = false; input.focus(); }
+    }
+
+    form.addEventListener('submit', event => { event.preventDefault(); ask(input.value); });
+    input.addEventListener('keydown', event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); form.requestSubmit(); } });
+    input.addEventListener('input', () => { input.style.height = 'auto'; input.style.height = `${Math.min(input.scrollHeight,130)}px`; });
+    document.querySelectorAll('[data-question]').forEach(button => button.addEventListener('click', () => ask(button.dataset.question)));
+    document.getElementById('newChat').addEventListener('click', () => { conversation.replaceChildren(); if (welcome) conversation.append(welcome); input.value=''; errorBox.style.display='none'; input.focus(); });
+    document.getElementById('aboutButton').addEventListener('click', () => document.querySelector('.safety-panel').scrollIntoView({behavior:'smooth',block:'center'}));
+    async function refreshServiceStatus() {
+      const statusText = document.querySelector('#serviceStatus span:last-child');
+      const statusDot = document.querySelector('.status-dot');
+      try {
+        const healthResponse = await fetch('/health');
+        if (!healthResponse.ok) throw new Error('Health endpoint failed');
+        const health = await healthResponse.json();
+        document.getElementById('providerValue').textContent = health.mock_mode ? 'Offline mock' : `LLM: ${health.provider}`;
+        const readyResponse = await fetch('/ready');
+        const ready = await readyResponse.json();
+        if (readyResponse.ok) {
+          const partial = ready.corpus_coverage === 'partial';
+          statusText.textContent = partial ? 'Partial textbook index ready' : 'Search indexes ready';
+          statusDot.style.background = partial ? '#d79a32' : '#38b57c';
+          const indexed = Number(ready.indexed_chunks).toLocaleString();
+          const total = Number(ready.total_chunks || ready.indexed_chunks).toLocaleString();
+          document.getElementById('knowledgeBaseValue').textContent = partial ? `${indexed} of ${total} chunks · partial` : `${indexed} textbook chunks`;
+        } else {
+          const detail = ready.detail || {};
+          statusText.textContent = 'Textbook index incomplete';
+          statusDot.style.background = '#d79a32';
+          document.getElementById('knowledgeBaseValue').textContent = `${Number(detail.vectors_indexed || 0).toLocaleString()} vectors · ${Number(detail.keyword_chunks || 0).toLocaleString()} keyword chunks`;
+        }
+      } catch (_) {
+        statusText.textContent = 'Service unavailable';
+        statusDot.style.background = '#dc6b6b';
+        document.getElementById('knowledgeBaseValue').textContent = 'Unavailable';
+        document.getElementById('providerValue').textContent = 'Unavailable';
+      }
+    }
+    refreshServiceStatus();
+
+    const accountDialog = document.getElementById('accountDialog');
+    const authError = document.getElementById('authError');
+    const signupHistory = document.getElementById('signupHistory');
+    function setAuthMode(next) {
+      authMode = next;
+      const signup = next === 'signup';
+      document.getElementById('authTitle').textContent = signedInUser ? 'Account settings' : (signup ? 'Create your account' : 'Sign in');
+      document.getElementById('authSubmit').textContent = signup ? 'Create account' : 'Sign in';
+      document.getElementById('authSwitch').textContent = signup ? 'I already have an account' : 'Create an account';
+      document.getElementById('authPassword').autocomplete = signup ? 'new-password' : 'current-password';
+      document.querySelector('.signup-consent').hidden = !signup;
+      document.getElementById('authSwitch').hidden = Boolean(signedInUser);
+      document.getElementById('authSubmit').hidden = Boolean(signedInUser);
+      document.getElementById('signOutButton').hidden = !signedInUser;
+      document.getElementById('deleteAccountButton').hidden = !signedInUser;
+      authError.style.display = 'none'; authError.textContent = '';
+    }
+    async function refreshHistory() {
+      const panel = document.getElementById('historyPanel');
+      panel.hidden = false;
+      if (!signedInUser) { document.getElementById('historyStatus').textContent = 'Sign in to see your activity. History is off by default.'; return; }
+      document.getElementById('historyConsent').checked = signedInUser.history_enabled;
+      document.getElementById('historyStatus').textContent = signedInUser.history_enabled ? 'Only your encrypted saved conversations appear here.' : 'History is off. Turn it on only if you want this server to save encrypted conversations.';
+      const response = await fetch('/api/v1/auth/history');
+      const data = await response.json();
+      const list = document.getElementById('historyList'); list.replaceChildren();
+      const items = data.conversations || [];
+      document.getElementById('historyCount').textContent = String(items.length);
+      for (const item of items) {
+        const row = document.createElement('div'); row.className = 'history-item';
+        row.textContent = String(item.question || 'Saved conversation').slice(0,120);
+        const date = document.createElement('time'); date.textContent = new Date(item.created_at * 1000).toLocaleString(); row.append(date); list.append(row);
+        const open = document.createElement('button'); open.type = 'button'; open.className = 'history-open'; open.textContent = 'Open conversation';
+        open.addEventListener('click', () => {
+          const conversation = document.getElementById('conversation');
+          conversation.replaceChildren();
+          addMessage('user', item.question || 'Saved question');
+          const result = item.result || {};
+          const message = addMessage('assistant', result.answer || 'No saved answer was found.');
+          showAnswer(result, message.content);
+          conversation.scrollTop = conversation.scrollHeight;
+          document.getElementById('historyPanel').hidden = true;
+        });
+        row.append(open);
+      }
+    }
+    async function loadAccount() {
+      try {
+        const response = await fetch('/api/v1/auth/me');
+        if (!response.ok) return;
+        const data = await response.json(); signedInUser = data.user;
+        const button = document.getElementById('accountButton'); button.textContent = signedInUser.email.split('@')[0];
+      } catch (_) { /* Sign-in remains available when the account API is offline. */ }
+    }
+    document.getElementById('accountButton').addEventListener('click', () => { setAuthMode(signedInUser ? 'login' : 'login'); accountDialog.showModal(); });
+    document.getElementById('closeAccount').addEventListener('click', () => accountDialog.close());
+    document.getElementById('authSwitch').addEventListener('click', () => setAuthMode(authMode === 'login' ? 'signup' : 'login'));
+    document.getElementById('authForm').addEventListener('submit', async event => {
+      event.preventDefault(); authError.style.display = 'none';
+      const endpoint = authMode === 'signup' ? 'signup' : 'login';
+      try {
+        const response = await fetch(`/api/v1/auth/${endpoint}`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('authEmail').value,password:document.getElementById('authPassword').value})});
+        const data = await response.json(); if (!response.ok) throw new Error(data.detail || 'Could not sign in.');
+        signedInUser = data.user;
+        let historySetupNotice = '';
+        if (authMode === 'signup' && signupHistory.checked) {
+          const preference = await fetch('/api/v1/auth/history',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:true})});
+          if (!preference.ok) { const problem = await preference.json(); historySetupNotice = problem.detail || 'History could not be enabled.'; }
+          else signedInUser.history_enabled = true;
+        }
+        document.getElementById('accountButton').textContent = signedInUser.email.split('@')[0];
+        accountDialog.close(); await refreshHistory();
+        if (historySetupNotice) document.getElementById('historyStatus').textContent = `Account created. ${historySetupNotice}`;
+      } catch (error) { authError.textContent = error.message; authError.style.display = 'block'; }
+    });
+    document.getElementById('signOutButton').addEventListener('click', async () => {
+      await fetch('/api/v1/auth/logout',{method:'POST'}); signedInUser = null; document.getElementById('accountButton').textContent = 'Sign in'; accountDialog.close(); document.getElementById('historyPanel').hidden = true;
+    });
+    document.getElementById('deleteAccountButton').addEventListener('click', async () => {
+      if (!window.confirm('Delete this account and all saved conversations? This cannot be undone.')) return;
+      const response = await fetch('/api/v1/auth/account',{method:'DELETE'});
+      if (!response.ok) { authError.textContent = 'Account could not be deleted.'; authError.style.display = 'block'; return; }
+      signedInUser = null; document.getElementById('accountButton').textContent = 'Sign in'; accountDialog.close(); document.getElementById('historyPanel').hidden = true;
+    });
+    document.getElementById('historyButton').addEventListener('click', refreshHistory);
+    document.getElementById('historyConsent').addEventListener('change', async event => {
+      if (!signedInUser) { event.target.checked = false; accountDialog.showModal(); return; }
+      const response = await fetch('/api/v1/auth/history',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:event.target.checked})});
+      if (!response.ok) { const problem = await response.json(); event.target.checked = signedInUser.history_enabled; document.getElementById('historyStatus').textContent = problem.detail || 'Could not update history preference.'; return; }
+      signedInUser.history_enabled = event.target.checked; await refreshHistory();
+    });
+    loadAccount();
+  </script>
+</body>
+</html>

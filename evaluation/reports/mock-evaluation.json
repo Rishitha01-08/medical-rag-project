@@ -1,0 +1,81 @@
+{
+  "configuration": {
+    "mock_mode": true,
+    "llm_provider": "mock",
+    "retrieval_modes": [
+      "dense",
+      "bm25",
+      "hybrid",
+      "hybrid_rerank"
+    ],
+    "top_k_dense": 5,
+    "top_k_bm25": 5,
+    "top_k_rerank": 3,
+    "min_relevance_score": 0.01,
+    "chunk_size": 180,
+    "chunk_overlap": 30
+  },
+  "corpus_size": 3,
+  "evaluation_size": 7,
+  "results": {
+    "dense": {
+      "recall_at_k": 1.0,
+      "precision_at_k": 0.2,
+      "mrr": 0.8333,
+      "ndcg": 0.877,
+      "citation_support_rate_proxy": 0.4286,
+      "groundedness_proxy": 0.4286,
+      "abstention_accuracy": 1,
+      "p50_latency_ms": 0.348,
+      "p95_latency_ms": 0.616,
+      "error_rate": 0.0
+    },
+    "bm25": {
+      "recall_at_k": 1.0,
+      "precision_at_k": 0.2,
+      "mrr": 1.0,
+      "ndcg": 1.0,
+      "citation_support_rate_proxy": 0.4286,
+      "groundedness_proxy": 0.4286,
+      "abstention_accuracy": 1,
+      "p50_latency_ms": 0.383,
+      "p95_latency_ms": 0.502,
+      "error_rate": 0.0
+    },
+    "hybrid": {
+      "recall_at_k": 1.0,
+      "precision_at_k": 0.2,
+      "mrr": 1.0,
+      "ndcg": 1.0,
+      "citation_support_rate_proxy": 0.4286,
+      "groundedness_proxy": 0.4286,
+      "abstention_accuracy": 1,
+      "p50_latency_ms": 0.38,
+      "p95_latency_ms": 0.435,
+      "error_rate": 0.0
+    },
+    "hybrid_rerank": {
+      "recall_at_k": 1.0,
+      "precision_at_k": 0.2,
+      "mrr": 1.0,
+      "ndcg": 1.0,
+      "citation_support_rate_proxy": 0.4286,
+      "groundedness_proxy": 0.4286,
+      "abstention_accuracy": 1,
+      "p50_latency_ms": 0.309,
+      "p95_latency_ms": 0.454,
+      "error_rate": 0.0
+    }
+  },
+  "failure_examples": {
+    "dense": [],
+    "bm25": [],
+    "hybrid": [],
+    "hybrid_rerank": []
+  },
+  "known_limitations": [
+    "Synthetic examples only; metrics are deterministic retrieval proxies, not clinical or model-quality measurements.",
+    "Token-vector dense mode is a local fallback, not a pretrained embedding model.",
+    "Latency is process-local and is not a production benchmark."
+  ]
+}

@@ -1,0 +1,22 @@
+name: CI
+on:
+  push:
+  pull_request:
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    env:
+      MOCK_MODE: "true"
+      APP_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - run: ruff format --check app tests scripts evaluation
+      - run: ruff check app tests scripts evaluation
+      - run: mypy app
+      - run: pytest
+      - run: python -m evaluation.run_evaluation
