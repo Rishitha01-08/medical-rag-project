@@ -3,11 +3,12 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
+from cryptography.fernet import Fernet
 from fastapi.testclient import TestClient
 
 from app.api import routes_health, routes_ingestion
 from app.main import app
-from app.services import qa_service, retrieval_service
+from app.services import account_service, qa_service, retrieval_service
 from app.services.ingestion_service import prepare_document
 
 client = TestClient(app)
@@ -68,6 +69,37 @@ def test_validation_response_does_not_echo_submitted_value():
     response = client.post("/api/v1/ask", json={"question": marker, "unexpected": marker})
     assert response.status_code == 422
     assert marker not in response.text
+
+
+def test_account_api_opt_in_history_and_logout(monkeypatch):
+    database_path = Path("data/local") / f"account-api-{uuid4().hex}.sqlite3"
+    monkeypatch.setattr(
+        account_service,
+        "settings",
+        replace(
+            account_service.settings,
+            database_path=str(database_path),
+            database_url="",
+            data_encryption_key=Fernet.generate_key().decode("ascii"),
+        ),
+    )
+    try:
+        account_service.initialize_account_store()
+        response = client.post(
+            "/api/v1/auth/signup",
+            json={"email": f"{uuid4().hex}@example.org", "password": "long test password 123"},
+        )
+        assert response.status_code == 200
+        assert "httponly" in response.headers["set-cookie"].lower()
+        assert client.get("/api/v1/auth/me").status_code == 200
+
+        enabled = client.patch("/api/v1/auth/history", json={"enabled": True})
+        assert enabled.status_code == 200 and enabled.json()["history_enabled"] is True
+        assert client.get("/api/v1/auth/history").json()["conversations"] == []
+        assert client.post("/api/v1/auth/logout").status_code == 200
+        assert client.get("/api/v1/auth/me").status_code == 401
+    finally:
+        database_path.unlink(missing_ok=True)
 
 
 def test_ingest_mock_without_key_is_dry_local_capability(monkeypatch):

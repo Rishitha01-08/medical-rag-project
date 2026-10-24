@@ -78,6 +78,7 @@ def index_jsonl_files(paths, batch_size=64, recreate=False):
     model = get_embedding_model()
     batch = []
     total = 0
+    batches_uploaded = 0
     known_chunk_ids = set()
     if not recreate:
         offset = None
@@ -125,10 +126,15 @@ def index_jsonl_files(paths, batch_size=64, recreate=False):
                 if len(batch) >= batch_size:
                     upload(batch)
                     total += len(batch)
+                    batches_uploaded += 1
+                    if batches_uploaded % 10 == 0:
+                        print(f"Embedded and stored {total:,} new chunks...", flush=True)
                     batch = []
     if batch:
         upload(batch)
         total += len(batch)
+        batches_uploaded += 1
+        print(f"Embedded and stored {total:,} new chunks...", flush=True)
     return total
 
 
