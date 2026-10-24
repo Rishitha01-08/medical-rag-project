@@ -1,127 +1,125 @@
-# Educational Medical RAG
+# MedGuide — Educational Medical RAG
 
-An offline-first, evidence-retrieval API that demonstrates document ingestion, lexical and deterministic dense retrieval, hybrid rank fusion, citation checks, safe abstention, and reproducible evaluation. It is designed as a portfolio engineering project; it is not clinical software and its small synthetic corpus is not medical guidance.
+MedGuide is a browser chat interface and FastAPI service that retrieves excerpts from supplied medical education text and returns evidence-linked educational responses. It is a learning/portfolio prototype, not a clinical service. It cannot diagnose, recommend treatment or doses, triage, or respond to emergencies.
 
-## Problem and safety boundary
+## Current state (read before demo/deployment)
 
-General-purpose generation can produce unsupported statements and citations. This project retrieves from a small corpus and returns source-linked excerpts, while abstaining when retrieval has no supporting evidence. It does not diagnose, prescribe, calculate doses, recommend treatment, triage, or respond to emergencies. Emergency-like questions receive only a recommendation to contact local emergency services or a qualified professional. Answers include an educational disclaimer. Nothing here is clinically validated.
+- The supplied workspace has **nine `.txt` extracts**, not PDFs. Their original page numbers and layout were not supplied, so citations show file/section/chunk rather than page. The ingestion audit reports **110,891 chunks** using 180-word windows with 30-word overlap. `Gastrology.txt` contains 67,528 replacement characters; the original missing characters cannot be reconstructed.
+- Source texts and generated chunks/indexes are ignored by Git because the supplied texts contain publisher copyright notices and redistribution rights have not been confirmed. Your local VS Code folder keeps them; the public GitHub branch will contain code and docs, not those books or derived chunk text. Confirm Hack-A-Cure's data license before uploading or sending them to any hosted service.
+- The full chunk file has been generated locally. Its **Qdrant vector and FTS5 keyword indexes have not been rebuilt/verified** yet. The app now reports not-ready and won't quietly fall back to the tiny sample corpus when the supplied books exist but the full index is absent. It cannot answer from all books until `/ready` reports ready.
+- Default `MOCK_MODE=true` returns a deterministic evidence excerpt, not a natural-language LLM answer. For generated answers, configure a supported Gemini or OpenAI provider and a private API key. A provider can still hallucinate; citation checks validate source IDs, not medical truth.
+- Signup/login and opt-in encrypted conversation history are prototype features. SQLite is for local, single-instance use; PostgreSQL can be selected with `DATABASE_URL`. This is not a production identity provider or medical-record system. Do not enter identifying health data.
+- No public endpoint, RAGAS score, expert jury result, clinical validation, or measured improvement is claimed. The checked-in benchmark is synthetic and too small to represent medical quality.
 
-RAG makes retrieved source material inspectable and replaceable without retraining model weights. The default implementation uses a deterministic mock generator and synthetic corpus, so it needs no model download, paid API, or network. Optional OpenAI-compatible and Gemini adapters are available when mock mode is disabled and the selected provider key is configured.
+## Problem statement and approach
+
+Long textbooks are difficult to search conversationally, while unconstrained language models may produce unsupported explanations. MedGuide tests a retrieval-augmented generation (RAG) workflow: split approved source text into traceable passages, retrieve relevant passages using both semantic and exact-term search, combine their rankings, then answer from the retrieved evidence and expose citations. If the evidence is missing, the intended behavior is abstention. This makes sources inspectable; it does not establish clinical correctness.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  D[Educational JSONL] --> I[Ingestion and deterministic chunking]
-  I --> L[Ignored local JSONL store]
-  L --> R[Dense token-vector + BM25 retrieval]
-  R --> F[Reciprocal Rank Fusion]
-  F --> Q[Deterministic reranker]
-  U[Question] --> S[Safety classification]
-  S --> R
-  R --> G[Mock or configured grounded generation]
-  G --> V[Citation integrity and abstention]
-  V --> A[FastAPI response + request ID]
+  T[Rights-cleared text sources] --> C[Normalize and chunk: 180 words / 30 overlap]
+  C --> J[Local JSONL with source metadata]
+  J --> E[FastEmbed: BGE small, 384 dimensions]
+  E --> Q[Qdrant cosine search]
+  J --> F[SQLite FTS5 BM25]
+  U[Question] --> S[Safety checks]
+  S --> Q
+  S --> F
+  Q --> R[Reciprocal Rank Fusion]
+  F --> R
+  R --> G[Mock or configured LLM]
+  G --> V[Citation-ID validation / abstention]
+  V --> A[FastAPI + browser chat]
 ```
 
-Request flow: validate input; apply safety rules; retrieve with the selected mode; rerank if requested; generate using the configured provider; verify cited chunk IDs; return citations, disclaimer, safety classification, and timing metadata. Retrieved text is treated as untrusted data.
+At query time the API validates input, applies a limited deterministic safety layer, retrieves candidates, combines dense and lexical rankings with Reciprocal Rank Fusion, optionally reranks by token overlap, and builds a provider prompt from the evidence. The grounding layer rejects citation IDs that are not among the retrieved chunks. This is a provenance-integrity check, not a medical fact checker. See [architecture](docs/architecture.md), [security](docs/security.md), and [evaluation notes](docs/evaluation.md).
 
-## Structure and design choices
+## Technology
 
-- `app/api`, `app/schemas`, and `app/services` separate HTTP, validation, and orchestration.
-- `app/retrieval` includes BM25, token-vector cosine fallback, RRF, and hybrid composition.
-- `data/sample` contains three short synthetic educational entries. `data/local` is ignored and holds locally ingested chunks.
-- `evaluation` provides a small synthetic question set and deterministic ranking/abstention proxies.
-- `tests` contains unit and API integration coverage.
-- `docs` describes architecture, security, evaluation, decisions, and interview talking points.
+Python 3.11+, FastAPI, Pydantic, FastEmbed (`BAAI/bge-small-en-v1.5`), Qdrant, SQLite FTS5/BM25, reciprocal rank fusion, optional Gemini/OpenAI-compatible generation, SQLite/PostgreSQL account storage, Fernet encryption for opted-in saved conversations, pytest, Ruff, Docker Compose, and optional RAGAS evaluation.
 
-BM25 helps exact terms; rank fusion combines lexical and token-vector rankings without assuming scores share a scale. The lightweight reranker is deterministic and inexpensive, but is not a cross-encoder. The local store is JSONL; Qdrant is not required or currently wired into the application.
+## Local setup (Windows PowerShell)
 
-## Technology stack
+Copy the nine supplied `.txt` files into `data/raw/hack-a-cure/`. Keep the originals unchanged. From the repository root:
 
-Python 3.11+, FastAPI, Pydantic v2, HTTPX for optional provider adapters, local JSONL persistence, deterministic BM25/token-vector retrieval, pytest with coverage, Ruff, mypy, Docker, and GitHub Actions.
-
-## Setup
-
-Requires Python 3.11 or newer. All configuration comes from environment variables; `.env.example` documents names and contains blanks/placeholders only. `.env` is ignored.
-
-```bash
-python -m venv .venv
-# Windows PowerShell: .venv\Scripts\Activate.ps1
-# macOS/Linux: source .venv/bin/activate
-python -m pip install -r requirements.txt
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+Copy-Item .env.example .env
+.\.venv\Scripts\python.exe -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 ```
 
-For offline local development, set `MOCK_MODE=true` (the default) and run `uvicorn app.main:app --reload`. If you use a local `.env` file, pass `--env-file .env`; never commit that file. OpenAPI docs are at `/docs`; readiness is `/ready`.
+Put the generated key in the ignored `.env` as `DATA_ENCRYPTION_KEY=...` if you want to enable history. Never paste API keys or encryption keys into chat, source code, README, or GitHub. Use `.venv`'s Python to run commands so dependencies install into the same environment.
 
-### Environment and real-provider boundary
+Create the chunk file and audit, then build both indexes:
 
-Available variables include `APP_ENV`, `MOCK_MODE`, `LOG_LEVEL`, `HOST`, `PORT`, `LLM_PROVIDER`, `LLM_MODEL`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `EMBEDDING_PROVIDER`, `EMBEDDING_MODEL`, `VECTOR_DB_URL`, `VECTOR_COLLECTION`, `QDRANT_API_KEY`, `TOP_K_DENSE`, `TOP_K_BM25`, `TOP_K_RERANK`, `MIN_RELEVANCE_SCORE`, `MAX_CONTEXT_CHARS`, `INGESTION_API_KEY`, `CHUNK_SIZE`, `CHUNK_OVERLAP`, `RATE_LIMIT_REQUESTS`, and `RATE_LIMIT_WINDOW_SECONDS`. The rate-limit values are reserved placeholders; no limiter is enforced. OpenAI-compatible chat completion and Gemini JSON-mode adapters are available when `MOCK_MODE=false`, `LLM_PROVIDER` selects one, and its key variable is configured. CI/tests/evaluation stay in mock mode and make no provider calls. Never put credential values in source, docs, logs, test data, or container images.
-
-### API examples
-
-```bash
-curl http://127.0.0.1:8000/health
-curl http://127.0.0.1:8000/ready
-curl -X POST http://127.0.0.1:8000/api/v1/ask -H "Content-Type: application/json" -d '{"question":"What does hydration mean?","retrieval_mode":"hybrid"}'
+```powershell
+.\.venv\Scripts\python.exe -m scripts.ingest_text_corpus
+.\.venv\Scripts\python.exe -m scripts.index_vector_store --recreate --batch-size 64
 ```
 
-Supported response shape: `answer`, `citations` (stable source IDs and short excerpts), `disclaimer`, `safety`, and `observability`. Unsupported questions return an explicit insufficient-evidence answer and no citations. Emergency-like questions return a high-level urgent-care recommendation.
+The full build embeds over 110,000 chunks and may take a long time on a laptop. For full-scale indexing use a persistent Qdrant server/cloud cluster and adequate disk/RAM. `--recreate` deletes the selected Qdrant collection before rebuilding it. Do not interrupt a build and assume it is complete. The indexer verifies point counts and writes an ignored manifest only after vector and keyword counts match. Check `http://127.0.0.1:8000/ready`; it must report `ready` and 110,891+ indexed chunks (the actual expected total includes the checked-in sample and any local ingested documents).
 
-Simplified supported response example (timing fields omitted):
+Run the site:
 
-```json
-{
-  "answer": "Available educational evidence: Hydration refers to having enough water available for normal body functions...",
-  "citations": [{"source_id": "hydration-001", "title": "Basic health concepts: hydration", "source": "Synthetic educational sample", "section": "Hydration", "excerpt": "Hydration refers to having enough water available..."}],
-  "disclaimer": "Educational information only; not for diagnosis, treatment, or emergencies. Consult a qualified health professional.",
-  "safety": {"category": "factual", "emergency": false, "abstained": false, "citation_support": 1.0}
-}
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --env-file .env
 ```
 
-Simplified insufficient-evidence response example (timing fields omitted):
+Open `http://127.0.0.1:8000/`. `/docs` is the developer API explorer; `/health` only reports process health; `/ready` confirms both full indexes. Until readiness succeeds, the provided textbook corpus is unavailable to queries.
 
-```json
-{
-  "answer": "I could not find sufficient supporting evidence in the available educational corpus to answer this question.",
-  "citations": [],
-  "disclaimer": "Educational information only; not for diagnosis, treatment, or emergencies. Consult a qualified health professional.",
-  "safety": {"category": "unsupported", "emergency": false, "abstained": true, "citation_support": 0.0}
-}
+## Accounts, history, and database
+
+Accounts use scrypt password hashing and opaque, hashed server-side session tokens in HttpOnly/SameSite cookies. History is off by default. Users may opt in; conversation JSON is encrypted with Fernet before storage, and turning history off deletes saved conversation rows. The UI can list and reopen saved conversations. SQLite works for local single-instance use. Set `DATABASE_URL=postgresql://...` for a managed PostgreSQL database; set `DATA_ENCRYPTION_KEY` independently and privately. Account creation currently has no email verification/password reset and this prototype has no distributed login throttling. Do not call it production-grade account/security infrastructure.
+
+## Optional natural-language generation
+
+Configure `.env` locally, or the hosting provider's secret settings:
+
+```env
+MOCK_MODE=false
+LLM_PROVIDER=gemini
+LLM_MODEL=gemini-2.0-flash
+GEMINI_API_KEY=<private key>
 ```
 
-Ingestion accepts educational JSON payloads at `POST /api/v1/documents/ingest`; it requires `X-API-Key` only when `INGESTION_API_KEY` is configured. Files are written to ignored `data/local/documents.jsonl`. For batch ingestion, use `python -m scripts.ingest_documents data/sample/sample_medical_corpus.jsonl --dry-run` then omit `--dry-run` to write chunks. Review source rights and privacy before ingestion.
+Alternatively choose the supported OpenAI provider and set `OPENAI_API_KEY`. Do not commit `.env`. The real provider receives the question and retrieved text, so only use rights-cleared educational content and non-identifying questions. Provider names/model availability/cost can change; check the provider's current console/docs.
 
-## Quality and evaluation
+## API
 
-```bash
-make setup
-make format-check
-make lint
-make typecheck
-make test
-make evaluate
+```powershell
+Invoke-RestMethod http://127.0.0.1:8000/health
+Invoke-RestMethod http://127.0.0.1:8000/ready
+Invoke-RestMethod -Method Post http://127.0.0.1:8000/api/v1/ask -ContentType 'application/json' -Body '{"question":"What does hydration mean?","retrieval_mode":"hybrid"}'
 ```
 
-Evaluation compares `dense`, `bm25`, `hybrid`, and `hybrid_rerank`. Run `MOCK_MODE=true python -m evaluation.run_evaluation`; the generated report is `evaluation/reports/mock-evaluation.json`. Metrics are generated locally and are not pre-filled claims. Citation support and groundedness are integrity proxies, not clinical or LLM-as-judge evaluations. Synthetic set size limits interpretation.
+Key endpoints: `POST /api/v1/ask`; `POST /api/v1/documents/ingest`; `POST /api/v1/auth/signup`; `POST /api/v1/auth/login`; `GET/PATCH /api/v1/auth/history`; `GET /health`; `GET /ready`; `GET /docs`. The answer response includes answer, citations/excerpts, disclaimer, safety classification, and timing/retrieval metadata. Ingestion API-key checking is active when `INGESTION_API_KEY` is set.
 
-## Docker
+## Evaluation and RAGAS
 
-```bash
-docker compose up --build
-docker compose down
+Run the deterministic synthetic retrieval checks:
+
+```powershell
+.\.venv\Scripts\python.exe -m evaluation.run_evaluation
 ```
 
-The container runs the local JSONL-backed API. Persistent ingestion data uses a named volume. Qdrant is not required; `VECTOR_DB_URL` is reserved for a future adapter and currently unused.
+Optional RAGAS judge evaluation needs `requirements-eval.txt`, a ready index, network, and a private Gemini API key (`GEMINI_API_KEY` or `GOOGLE_API_KEY`):
 
-## Security and privacy
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-eval.txt
+.\.venv\Scripts\python.exe -m evaluation.run_ragas
+```
 
-No authentication is provided for the question endpoint. Ingestion API-key protection is optional and intended only as a small local control. There is no distributed rate limiting. Questions and answers are not logged by default; request logs contain request ID, endpoint, status, and latency. Do not submit identifiable health data. See [docs/security.md](docs/security.md).
+It estimates faithfulness and context utilization. It does not establish answer correctness or clinical safety, and the synthetic cases are not a medical benchmark. A credible hackathon evaluation needs a rights-cleared held-out question set, reviewed expected answers/relevant passages, reproducible runs, RAGAS outputs, and independent jury review. Report actual results; do not invent scores. See [jury scorecard](evaluation/jury-scorecard.md).
 
-## Limitations and next steps
+## GitHub and deployment
 
-The corpus is synthetic and very small. Dense retrieval is a deterministic token-vector fallback, not semantic embeddings. Retrieval relevance and grounding checks do not establish medical correctness. Qdrant, production authentication, distributed rate limiting, and clinical validation are not included. Real provider adapters require credentials and network at runtime and are not tested against external services. Useful extensions include a rights-cleared public corpus, measured embedding adapter, cross-encoder reranker, and deployment hardening.
+GitHub stores source code; it does not run this FastAPI service by itself. The repository includes a Vercel Python entry point, but a useful deployment still needs a durable external Qdrant, PostgreSQL, embedding model availability, encrypted-history key, and LLM key (if generation is enabled). Vercel functions have read-only storage except temporary `/tmp`; local SQLite/Qdrant persistence and local textbook files do not become durable hosted services. The 110k-chunk index must be built and uploaded separately after confirming data rights. Configure secrets in the hosting dashboard; never commit them. A free Qdrant cluster is documented for prototyping with resource limits and inactivity behavior, not as a guarantee for production or sensitive health data. Do not advertise a deployed endpoint until `/ready` passes on the deployed URL.
 
-## Interview talking points
+For a portfolio/hackathon demo, Vercel plus managed Qdrant/PostgreSQL is possible after the data-license check and full index upload. For actual patient or identifiable health data, this prototype is not an appropriate service; privacy, security, clinical, regulatory, provider, and operations review is required.
 
-Discuss why retrieval gives inspectable evidence, how BM25 and dense-style ranking complement each other, why RRF combines rankings, how citation IDs are checked, and why safe abstention matters in a medical-information demo. Be clear that all provided evaluation data is synthetic and the implementation does not validate clinical accuracy. See [docs/interview-guide.md](docs/interview-guide.md).
+## Interview preparation
+
+See [the interview guide](docs/interview-guide.md) for the problem statement, architecture narrative, trade-offs, likely questions, honest project status, and a code walkthrough. Lead with the actual implementation and the known limits: nine text extracts, 180/30 word chunking, hybrid Qdrant + FTS5 retrieval, RRF, configurable generation, prototype accounts, and no verified RAGAS score or deployment yet.

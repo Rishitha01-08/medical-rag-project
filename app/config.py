@@ -38,9 +38,12 @@ class Settings:
     llm_model: str = os.getenv("LLM_MODEL", "mock-evidence-v1")
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
-    embedding_provider: str = os.getenv("EMBEDDING_PROVIDER", "local")
-    embedding_model: str = os.getenv("EMBEDDING_MODEL", "deterministic-token-v1")
-    vector_db_url: str = os.getenv("VECTOR_DB_URL", "")
+    embedding_provider: str = os.getenv("EMBEDDING_PROVIDER", "fastembed").lower()
+    embedding_model: str = os.getenv("EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5")
+    embedding_cache_dir: str = os.getenv("EMBEDDING_CACHE_DIR", "")
+    vector_db_url: str = os.getenv(
+        "QDRANT_URL", os.getenv("VECTOR_DB_URL", "embedded")
+    )
     vector_collection: str = os.getenv("VECTOR_COLLECTION", "medical_docs")
     qdrant_api_key: str = os.getenv("QDRANT_API_KEY", "")
     top_k_dense: int = _int("TOP_K_DENSE", 5)
@@ -54,6 +57,9 @@ class Settings:
     chunk_overlap: int = _int("CHUNK_OVERLAP", 30)
     rate_limit_requests: int = _int("RATE_LIMIT_REQUESTS", 60)
     rate_limit_window_seconds: int = _int("RATE_LIMIT_WINDOW_SECONDS", 60)
+    database_path: str = os.getenv("DATABASE_PATH", "data/local/medguide.sqlite3")
+    database_url: str = os.getenv("DATABASE_URL", "")
+    data_encryption_key: str = os.getenv("DATA_ENCRYPTION_KEY", "")
 
     def validate(self) -> None:
         if not 1 <= self.port <= 65535:
@@ -62,6 +68,10 @@ class Settings:
             raise ValueError("LOG_LEVEL must be a standard logging level")
         if self.llm_provider not in {"mock", "openai", "gemini"}:
             raise ValueError("LLM_PROVIDER must be mock, openai, or gemini")
+        if self.embedding_provider != "fastembed":
+            raise ValueError("EMBEDDING_PROVIDER must be fastembed")
+        if self.embedding_model != "BAAI/bge-small-en-v1.5":
+            raise ValueError("The configured Qdrant collection expects BAAI/bge-small-en-v1.5 (384 dimensions)")
         if not self.mock_mode and self.llm_provider == "mock":
             raise ValueError("Set LLM_PROVIDER to openai or gemini when MOCK_MODE=false")
         if min(self.top_k_dense, self.top_k_bm25, self.top_k_rerank) < 1:
@@ -70,6 +80,8 @@ class Settings:
             raise ValueError("MIN_RELEVANCE_SCORE must be between 0 and 1")
         if self.max_context_chars < 1:
             raise ValueError("MAX_CONTEXT_CHARS must be positive")
+        if self.database_url and not self.database_url.startswith(("postgres://", "postgresql://")):
+            raise ValueError("DATABASE_URL must use PostgreSQL when configured")
         if self.chunk_size <= self.chunk_overlap or self.chunk_overlap < 0:
             raise ValueError("CHUNK_SIZE must be greater than non-negative CHUNK_OVERLAP")
         if not self.mock_mode and self.llm_provider == "openai" and not self.openai_api_key:

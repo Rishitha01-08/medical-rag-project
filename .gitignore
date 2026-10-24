@@ -12,6 +12,9 @@ htmlcov/
 .mypy_cache/
 data/local/
 data/test-tmp/
+# Large supplied source texts stay local unless redistribution rights are confirmed.
+data/raw/hack-a-cure/
+evaluation/reports/ragas-evaluation.json
 *.sqlite3
 *.db
 

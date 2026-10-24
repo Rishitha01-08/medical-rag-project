@@ -1,0 +1,8 @@
+.venv/
+venv/
+data/raw/
+data/local/
+data/test-tmp/
+tests/
+evaluation/reports/
+docs/

@@ -2,21 +2,37 @@ from dataclasses import replace
 from pathlib import Path
 from uuid import uuid4
 
+import pytest
 from fastapi.testclient import TestClient
 
-from app.api import routes_ingestion
+from app.api import routes_health, routes_ingestion
 from app.main import app
-from app.services import retrieval_service
+from app.services import qa_service, retrieval_service
 from app.services.ingestion_service import prepare_document
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def use_local_sample_indexes(monkeypatch):
+    monkeypatch.setattr(routes_health, "vector_store_ready", lambda: True)
+    monkeypatch.setattr(routes_health, "keyword_index_ready", lambda: True)
+    monkeypatch.setattr(
+        qa_service,
+        "search_detailed",
+        lambda question, mode: retrieval_service.search_detailed(
+            question, mode, retrieval_service.load_documents()
+        ),
+    )
 
 
 def test_health_readiness_and_request_id():
     health = client.get("/health")
     assert health.status_code == 200 and health.json()["status"] == "ok"
     assert health.headers["x-request-id"]
-    assert client.get("/ready").json()["local_documents"] >= 3
+    ready = client.get("/ready")
+    assert ready.status_code == 200
+    assert ready.json()["vector_database"] == "qdrant"
 
 
 def test_supported_and_unsupported_question_flow():
@@ -29,6 +45,12 @@ def test_supported_and_unsupported_question_flow():
         "/api/v1/ask", json={"question": "Explain quantum engine maintenance"}
     ).json()
     assert unsupported["safety"]["abstained"] is True
+
+
+def test_common_sleep_typo_still_retrieves_sleep_evidence():
+    response = client.post("/api/v1/ask", json={"question": "I am not getting slepp properly"})
+    assert response.status_code == 200
+    assert response.json()["citations"][0]["source_id"] == "sleep-001"
 
 
 def test_input_validation_and_emergency_response():

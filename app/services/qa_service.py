@@ -13,7 +13,7 @@ DISCLAIMER = "Educational information only; not for diagnosis, treatment, or eme
 UNSUPPORTED = "I could not find sufficient supporting evidence in the available educational corpus to answer this question."
 
 
-def answer_question(question, mode="hybrid"):
+def answer_question(question, mode="hybrid", retrieved_hits=None):
     started = time.perf_counter()
     if EMERGENCY.search(question):
         return {
@@ -66,7 +66,10 @@ def answer_question(question, mode="hybrid"):
                 "total_latency_ms": elapsed_ms(started),
             },
         }
-    hits, retrieval_ms, reranking_ms = search_detailed(question, mode)
+    if retrieved_hits is None:
+        hits, retrieval_ms, reranking_ms = search_detailed(question, mode)
+    else:
+        hits, retrieval_ms, reranking_ms = retrieved_hits, 0.0, 0.0
     remaining_context = settings.max_context_chars
     bounded_hits = []
     for hit in hits:

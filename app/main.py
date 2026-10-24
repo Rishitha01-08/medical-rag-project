@@ -2,27 +2,46 @@
 
 import time
 import uuid
+from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 
+from app.api.routes_accounts import router as accounts_router
 from app.api.routes_health import router as health_router
 from app.api.routes_ingestion import router as ingestion_router
 from app.api.routes_qa import router as qa_router
 from app.config import settings
 from app.observability.logging import configure_logging
 from app.observability.metrics import elapsed_ms
+from app.services.account_service import initialize_account_store
 
 logger = configure_logging(settings.log_level)
+
+
+@asynccontextmanager
+async def lifespan(_app):
+    initialize_account_store()
+    yield
+
+
 app = FastAPI(
     title="Educational Medical RAG API",
     version="2.0.0",
     description="Evidence retrieval for educational information. Not a clinical decision-support, diagnosis, prescription, or emergency-response tool.",
+    lifespan=lifespan,
 )
 app.include_router(health_router)
+app.include_router(accounts_router)
 app.include_router(qa_router)
 app.include_router(ingestion_router)
+
+
+@app.get("/", include_in_schema=False)
+def home():
+    return FileResponse(Path(__file__).parent / "static" / "index.html")
 
 
 @app.exception_handler(RequestValidationError)
