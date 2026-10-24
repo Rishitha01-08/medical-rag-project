@@ -177,3 +177,37 @@ def vector_store_chunk_ids():
         )
         if offset is None:
             return chunk_ids
+
+
+def remove_unexpected_vector_chunks(allowed_chunk_ids):
+    """Remove stale points not represented in the selected current JSONL inputs."""
+    client = get_client()
+    if not client.collection_exists(settings.vector_collection):
+        return 0
+    stale_point_ids = []
+    removed = 0
+    offset = None
+    while True:
+        points, offset = client.scroll(
+            collection_name=settings.vector_collection,
+            limit=1000,
+            offset=offset,
+            with_payload=["chunk_id"],
+            with_vectors=False,
+        )
+        stale_point_ids.extend(
+            point.id
+            for point in points
+            if not point.payload or point.payload.get("chunk_id") not in allowed_chunk_ids
+        )
+        if len(stale_point_ids) >= 1000 or offset is None:
+            if stale_point_ids:
+                client.delete(
+                    collection_name=settings.vector_collection,
+                    points_selector=models.PointIdsList(points=stale_point_ids),
+                    wait=True,
+                )
+                removed += len(stale_point_ids)
+                stale_point_ids = []
+        if offset is None:
+            return removed

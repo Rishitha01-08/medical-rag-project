@@ -70,7 +70,7 @@ If the full embedding pass is too heavy for your laptop, press **Ctrl+C** in the
 .\.venv\Scripts\python.exe -m scripts.index_vector_store --finalize-partial
 ```
 
-This does not create additional vectors. `/ready` reports the indexed and total chunk counts, and the website labels the index **Partial textbook index ready**. You can demo the UI and ask about material in the indexed subset, but it may miss other topics and must not be described as searching all nine textbooks. Resume full indexing later with the normal command above; the app should be stopped while the local Qdrant index is being modified.
+This does not create additional vectors. It removes only stale vector IDs that no longer exist in the selected current inputs, then builds FTS5 for the retained vectors. `/ready` reports the indexed and total chunk counts, and the website labels the index **Partial textbook index ready**. You can demo the UI and ask about material in the indexed subset, but it may miss other topics and must not be described as searching all nine textbooks. Resume full indexing later with the normal command above; the app should be stopped while the local Qdrant index is being modified.
 
 Run the site:
 

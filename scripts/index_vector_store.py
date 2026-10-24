@@ -10,6 +10,7 @@ from app.services.index_manifest import MANIFEST_PATH
 from app.services.lexical_index_service import keyword_index_ids, rebuild_index
 from app.services.vector_store_service import (
     index_jsonl_files,
+    remove_unexpected_vector_chunks,
     vector_store_chunk_ids,
     vector_store_count,
 )
@@ -59,6 +60,7 @@ def main():
     if not expected_ids:
         parser.error("No indexed chunks found in the selected input files")
     if args.finalize_partial:
+        removed_stale = remove_unexpected_vector_chunks(expected_ids)
         vector_ids = vector_store_chunk_ids()
         if not vector_ids:
             raise SystemExit("No vectors are stored yet; run the normal index command first.")
@@ -93,7 +95,8 @@ def main():
         coverage = "complete" if corpus_complete else "partial"
         print(
             f"Finalized {coverage} index: {len(vector_ids):,} of {len(expected_ids):,} chunks; "
-            f"rebuilt {lexical_count:,} keyword chunks. No vectors were embedded."
+            f"rebuilt {lexical_count:,} keyword chunks; removed {removed_stale:,} stale vectors. "
+            "No vectors were embedded."
         )
         return
     if args.recreate:
