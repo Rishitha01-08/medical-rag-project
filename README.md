@@ -57,10 +57,10 @@ Create the chunk file and audit, then build both indexes:
 
 ```powershell
 .\.venv\Scripts\python.exe -m scripts.ingest_text_corpus
-.\.venv\Scripts\python.exe -m scripts.index_vector_store --recreate --batch-size 64
+.\.venv\Scripts\python.exe -m scripts.index_vector_store --batch-size 64
 ```
 
-The full build embeds over 110,000 chunks and may take a long time on a laptop. For full-scale indexing use a persistent Qdrant server/cloud cluster and adequate disk/RAM. `--recreate` deletes the selected Qdrant collection before rebuilding it. Do not interrupt a build and assume it is complete. The indexer verifies point counts and writes an ignored manifest only after vector and keyword counts match. Check `http://127.0.0.1:8000/ready`; it must report `ready` and 110,891+ indexed chunks (the actual expected total includes the checked-in sample and any local ingested documents).
+The full build embeds over 110,000 chunks and may take a long time on a laptop. Keep the terminal open and watch its progress messages. If a run is interrupted, rerun without `--recreate`; it skips vector IDs already stored and rebuilds the keyword index. For full-scale indexing use a persistent Qdrant server/cloud cluster and adequate disk/RAM. `--recreate` deletes the selected Qdrant collection before rebuilding it, so use it only after changing the corpus/chunker or when you intentionally want a clean rebuild. The indexer compares exact chunk-ID sets, not only counts, and writes an ignored manifest only after vector and keyword indexes match. Check `http://127.0.0.1:8000/ready`; it must report `ready` and 110,891+ indexed chunks (the actual expected total includes the checked-in sample and any local ingested documents).
 
 Run the site:
 
